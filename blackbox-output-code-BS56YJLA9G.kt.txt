@@ -1,0 +1,47 @@
+// In AndroidManifest.xml, add permissions: <uses-permission android:name="android.permission.WAKE_LOCK" /> etc.
+// Add service: <service android:name=".AiCompanionService" android:foregroundServiceType="microphone" />
+
+class AiCompanionService : Service() {
+    private lateinit var wakeLock: PowerManager.WakeLock
+    private lateinit var speechRecognizer: SpeechRecognizer
+    private val wakeWord = "Hey Assistant"
+
+    override fun onCreate() {
+        super.onCreate()
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AiCompanion:WakeLock")
+        wakeLock.acquire()  // Keep CPU awake
+
+        // Initialize low-power wake-word detection (use TensorFlow Lite for on-device ML)
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        }
+        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+            override fun onPartialResults(partialResults: Bundle?) {
+                val results = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (results?.any { it.contains(wakeWord, ignoreCase = true) } == true) {
+                    // Wake up: Start full STT and overlay
+                    startOverlayAndStream()
+                }
+            }
+            // Implement other methods (onReadyForSpeech, etc.)
+        })
+        speechRecognizer.startListening(intent)
+    }
+
+    private fun startOverlayAndStream() {
+        // Launch overlay activity or service for avatar
+        val intent = Intent(this, AvatarOverlayActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+        // Stream to backend via WebSocket (E2EE)
+    }
+
+    override fun onDestroy() {
+        wakeLock.release()
+        speechRecognizer.destroy()
+        super.onDestroy()
+    }
+}

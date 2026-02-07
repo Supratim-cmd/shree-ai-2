@@ -1,0 +1,11 @@
+public class AvatarController : MonoBehaviour {
+    public void SyncLips(string phonemeData) {
+        string[] phonemes = phonemeData.Split(',');
+        // Map phonemes to blend shapes (e.g., jaw open/close)
+        foreach (string phoneme in phonemes) {
+            // Animate based on phoneme (e.g., 'a' -> open mouth)
+            SkinnedMeshRenderer renderer = GetComponent<SkinnedMeshRenderer>();
+            renderer.SetBlendShapeWeight(0, phoneme == "a" ? 100 : 0);  // Example
+        }
+    }
+}

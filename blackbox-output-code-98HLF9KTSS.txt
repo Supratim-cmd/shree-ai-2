@@ -1,0 +1,13 @@
+[Mobile Client]
+├── Background Service (Wake-Word Detection)
+├── Overlay UI (3D Avatar Rendering + Lip-Sync)
+├── Voice Engine (TTS/STT Streaming)
+└── Security (Biometric Auth + E2EE)
+
+[Backend Server]
+├── FastAPI Endpoints (Secure Handshake, AI Inference)
+├── Redis (Encrypted Session Mgmt)
+└── AI Integrations (GPT-4o, TTS/STT)
+
+[Data Flow: Client ↔ Backend (E2EE WebSocket)]
+- Audio Input → STT → GPT-4o → TTS → Lip-Sync → Avatar Output
