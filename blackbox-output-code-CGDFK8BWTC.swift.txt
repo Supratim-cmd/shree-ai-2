@@ -1,0 +1,58 @@
+// In Info.plist, add: <key>UIBackgroundModes</key><array><string>audio</string></array>
+// Enable microphone permissions.
+
+import Speech
+import AVFoundation
+
+class AiCompanionManager: NSObject, SFSpeechRecognizerDelegate {
+    private var audioEngine = AVAudioEngine()
+    private var speechRecognizer = SFSpeechRecognizer()
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private let wakeWord = "Hey Assistant"
+
+    func startBackgroundListening() {
+        SFSpeechRecognizer.requestAuthorization { status in
+            guard status == .authorized else { return }
+            self.speechRecognizer?.delegate = self
+            self.startRecognition()
+        }
+    }
+
+    private func startRecognition() {
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        recognitionRequest?.shouldReportPartialResults = true
+
+        let inputNode = audioEngine.inputNode
+        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest!) { result, error in
+            if let result = result, result.isFinal == false {
+                if result.bestTranscription.formattedString.lowercased().contains(self.wakeWord.lowercased()) {
+                    // Wake up: Start overlay and stream
+                    self.startOverlayAndStream()
+                }
+            }
+        }
+
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+            self.recognitionRequest?.append(buffer)
+        }
+        audioEngine.prepare()
+        try? audioEngine.start()
+    }
+
+    private func startOverlayAndStream() {
+        // Present overlay view controller for avatar
+        DispatchQueue.main.async {
+            let overlayVC = AvatarOverlayViewController()
+            UIApplication.shared.windows.first?.rootViewController?.present(overlayVC, animated: true)
+        }
+        // Stream to backend via WebSocket (E2EE)
+    }
+
+    func stopListening() {
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+    }
+}

@@ -1,0 +1,23 @@
+// Android (in AvatarOverlayActivity, assuming UnityPlayer view)
+class AvatarOverlayActivity : AppCompatActivity() {
+    private lateinit var unityPlayer: UnityPlayer
+
+    fun onTtsAudioGenerated(audioData: ByteArray, phonemes: List<String>) {
+        // Send phonemes to Unity for lip-sync
+        unityPlayer.UnitySendMessage("AvatarController", "SyncLips", phonemes.joinToString(","))
+        // Play audio and animate in sync
+        playAudio(audioData)
+    }
+}
+
+// Swift (in AvatarOverlayViewController, assuming UnityView)
+class AvatarOverlayViewController: UIViewController {
+    private var unityView: UIView!
+
+    func onTtsAudioGenerated(audioData: Data, phonemes: [String]) {
+        // Send to Unity
+        UnityFramework.getInstance()?.sendMessageToGO(withName: "AvatarController", functionName: "SyncLips", message: phonemes.joined(separator: ","))
+        // Play and sync
+        playAudio(audioData)
+    }
+}
